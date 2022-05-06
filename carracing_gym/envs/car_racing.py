@@ -331,19 +331,19 @@ class CarRacing(gym.Env, EzPickle):
 
         # Red-white border on hard turns
         border = [False] * len(track)
-        for i in range(len(track)):
-            good = True
-            oneside = 0
-            for neg in range(BORDER_MIN_COUNT):
-                beta1 = track[i - neg - 0][1]
-                beta2 = track[i - neg - 1][1]
-                good &= abs(beta1 - beta2) > TRACK_TURN_RATE * 0.2
-                oneside += np.sign(beta1 - beta2)
-            good &= abs(oneside) == BORDER_MIN_COUNT
-            border[i] = good
-        for i in range(len(track)):
-            for neg in range(BORDER_MIN_COUNT):
-                border[i - neg] |= border[i]
+        # for i in range(len(track)):
+        #     good = True
+        #     oneside = 0
+        #     for neg in range(BORDER_MIN_COUNT):
+        #         beta1 = track[i - neg - 0][1]
+        #         beta2 = track[i - neg - 1][1]
+        #         good &= abs(beta1 - beta2) > TRACK_TURN_RATE * 0.2
+        #         oneside += np.sign(beta1 - beta2)
+        #     good &= abs(oneside) == BORDER_MIN_COUNT
+        #     border[i] = good
+        # for i in range(len(track)):
+        #     for neg in range(BORDER_MIN_COUNT):
+        #         border[i - neg] |= border[i]
 
         # Create tiles
         for i in range(len(track)):
@@ -369,7 +369,8 @@ class CarRacing(gym.Env, EzPickle):
             self.fd_tile.shape.vertices = vertices
             t = self.world.CreateStaticBody(fixtures=self.fd_tile)
             t.userData = t
-            c = 0.01 * (i % 3)
+            # c = 0.01 * (i % 3)
+            c = 0
             t.color = [ROAD_COLOR[0] + c, ROAD_COLOR[1] + c, ROAD_COLOR[2] + c]
             t.road_visited = False
             t.road_friction = 1.0
@@ -670,7 +671,8 @@ class CarRacing(gym.Env, EzPickle):
             return  # reset() not called yet
 
         # Animate zoom first second:
-        zoom = 0.1 * SCALE * max(1 - self.t, 0) + ZOOM * SCALE * min(self.t, 1)
+        # zoom = 0.1 * SCALE * max(1 - self.t, 0) + ZOOM * SCALE * min(self.t, 1)
+        zoom = ZOOM * SCALE
         scroll_x = self.car.hull.position[0]
         scroll_y = self.car.hull.position[1]
         angle = -self.car.hull.angle
@@ -755,7 +757,7 @@ class CarRacing(gym.Env, EzPickle):
         ]
 
         k = PLAYFIELD / 20.0
-        colors.extend([0.4, 0.9, 0.4, 1.0] * 4 * 20 * 20)
+        colors.extend([0.4, 0.8, 0.4, 1.0] * 4 * 20 * 20)
         for x in range(-20, 20, 2):
             for y in range(-20, 20, 2):
                 polygons_.extend(
@@ -861,10 +863,10 @@ ACTION_LOOKUP = {
 }
 
 ACTION_CONT = [
-    [ 0.0, 0.0, 0.8], # Do-Nothing
-    [ 0.0, 1.0, 0.8], # Accelerate
+    [ 0.0, 0.0, 0.0], # Do-Nothing
+    [ 0.0, 1.0, 0.0], # Accelerate
     [ 0.0, 0.0, 0.8], # Brake
-    [-1.0, 1.0, 0.0], # Turn_left
+    [-1.0, 0.0, 0.0], # Turn_left
     [ 1.0, 0.0, 0.0], # Turn_right
 ]
 
