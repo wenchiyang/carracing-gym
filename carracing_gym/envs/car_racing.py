@@ -41,7 +41,7 @@ from Box2D.b2 import contactListener
 
 import gym
 from gym import spaces
-from gym.envs.box2d.car_dynamics import Car
+from .car_dynamics import Car
 from gym.utils import seeding, EzPickle
 from gym.spaces.discrete import Discrete
 
@@ -59,9 +59,9 @@ WINDOW_H = 800
 
 SCALE = 6.0  # Track scale
 TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
-PLAYFIELD = 2000 / SCALE  # Game over boundary
+PLAYFIELD = 2000 / SCALE  # Game over boundary #2000
 FPS = 50  # Frames per second
-ZOOM = 2.7  # Camera zoom
+ZOOM = 2.7  # Camera zoom #2.7
 ZOOM_FOLLOW = True  # Set to False for fixed view (don't use zoom)
 
 
@@ -174,12 +174,21 @@ class CarRacing(gym.Env, EzPickle):
         self.t = 0.0
         self.road_poly = []
 
-        self.road = self.road_storage[ind]
-        self.world = self.world_storage[ind]
+        # self.road = self.road_storage[ind]
+        # self.world = self.world_storage[ind]
         self.road_poly = self.road_poly_storage[ind]
         self.track = self.track_storage[ind]
 
-        # return self.maps[ind]
+        # Create tiles
+        for (vertices, color) in self.road_poly:
+            self.fd_tile.shape.vertices = vertices
+            t = self.world.CreateStaticBody(fixtures=self.fd_tile)
+            t.userData = t
+            t.color = color
+            t.road_visited = False
+            t.road_friction = 1.0
+            t.fixtures[0].sensor = True
+            self.road.append(t)
 
     def _destroy(self):
         if not self.road:
@@ -377,27 +386,27 @@ class CarRacing(gym.Env, EzPickle):
             t.fixtures[0].sensor = True
             self.road_poly.append(([road1_l, road1_r, road2_r, road2_l], t.color))
             self.road.append(t)
-            if border[i]:
-                side = np.sign(beta2 - beta1)
-                b1_l = (
-                    x1 + side * TRACK_WIDTH * math.cos(beta1),
-                    y1 + side * TRACK_WIDTH * math.sin(beta1),
-                )
-                b1_r = (
-                    x1 + side * (TRACK_WIDTH + BORDER) * math.cos(beta1),
-                    y1 + side * (TRACK_WIDTH + BORDER) * math.sin(beta1),
-                )
-                b2_l = (
-                    x2 + side * TRACK_WIDTH * math.cos(beta2),
-                    y2 + side * TRACK_WIDTH * math.sin(beta2),
-                )
-                b2_r = (
-                    x2 + side * (TRACK_WIDTH + BORDER) * math.cos(beta2),
-                    y2 + side * (TRACK_WIDTH + BORDER) * math.sin(beta2),
-                )
-                self.road_poly.append(
-                    ([b1_l, b1_r, b2_r, b2_l], (1, 1, 1) if i % 2 == 0 else (1, 0, 0))
-                )
+            # if border[i]:
+            #     side = np.sign(beta2 - beta1)
+            #     b1_l = (
+            #         x1 + side * TRACK_WIDTH * math.cos(beta1),
+            #         y1 + side * TRACK_WIDTH * math.sin(beta1),
+            #     )
+            #     b1_r = (
+            #         x1 + side * (TRACK_WIDTH + BORDER) * math.cos(beta1),
+            #         y1 + side * (TRACK_WIDTH + BORDER) * math.sin(beta1),
+            #     )
+            #     b2_l = (
+            #         x2 + side * TRACK_WIDTH * math.cos(beta2),
+            #         y2 + side * TRACK_WIDTH * math.sin(beta2),
+            #     )
+            #     b2_r = (
+            #         x2 + side * (TRACK_WIDTH + BORDER) * math.cos(beta2),
+            #         y2 + side * (TRACK_WIDTH + BORDER) * math.sin(beta2),
+            #     )
+            #     self.road_poly.append(
+            #         ([b1_l, b1_r, b2_r, b2_l], (1, 1, 1) if i % 2 == 0 else (1, 0, 0))
+            #     )
         self.track = track
         return True, (self.road, self.world, self.road_poly, self.track)
 
@@ -630,6 +639,10 @@ class CarRacing(gym.Env, EzPickle):
 
         step_reward = 0
         done = False
+        info = {
+            "violation": False,
+            "is_success": False
+        }
         if action is not None:  # First step without action, called from reset()
             self.reward -= 0.1
             # We actually don't want to count fuel spent, we want car to be faster.
@@ -640,13 +653,17 @@ class CarRacing(gym.Env, EzPickle):
             # success!
             if self.tile_visited_count == len(self.track):
                 done = True
+                info["is_success"] = True
+                info["violation"] = False
             x, y = self.car.hull.position
             # 
             if abs(x) > PLAYFIELD or abs(y) > PLAYFIELD:
                 done = True
                 step_reward = -100
+                info["is_success"] = False
+                info["violation"] = True
 
-        return self.state, step_reward, done, {}
+        return self.state, step_reward, done, info
 
     def render(self, mode="human"):
         assert mode in ["human", "state_pixels", "rgb_array"]
