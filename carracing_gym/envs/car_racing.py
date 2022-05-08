@@ -640,7 +640,6 @@ class CarRacing(gym.Env, EzPickle):
         step_reward = 0
         done = False
         info = {
-            "violation": False,
             "is_success": False
         }
         if action is not None:  # First step without action, called from reset()
@@ -654,14 +653,12 @@ class CarRacing(gym.Env, EzPickle):
             if self.tile_visited_count == len(self.track):
                 done = True
                 info["is_success"] = True
-                info["violation"] = False
             x, y = self.car.hull.position
             # 
             if abs(x) > PLAYFIELD or abs(y) > PLAYFIELD:
                 done = True
                 step_reward = -100
                 info["is_success"] = False
-                info["violation"] = True
 
         return self.state, step_reward, done, info
 
@@ -773,26 +770,26 @@ class CarRacing(gym.Env, EzPickle):
             0,
         ]
 
-        k = PLAYFIELD / 20.0
-        colors.extend([0.4, 0.8, 0.4, 1.0] * 4 * 20 * 20)
-        for x in range(-20, 20, 2):
-            for y in range(-20, 20, 2):
-                polygons_.extend(
-                    [
-                        k * x + k,
-                        k * y + 0,
-                        0,
-                        k * x + 0,
-                        k * y + 0,
-                        0,
-                        k * x + 0,
-                        k * y + k,
-                        0,
-                        k * x + k,
-                        k * y + k,
-                        0,
-                    ]
-                )
+        # k = PLAYFIELD / 20.0
+        # colors.extend([0.4, 0.8, 0.4, 1.0] * 4 * 20 * 20)
+        # for x in range(-20, 20, 2):
+        #     for y in range(-20, 20, 2):
+        #         polygons_.extend(
+        #             [
+        #                 k * x + k,
+        #                 k * y + 0,
+        #                 0,
+        #                 k * x + 0,
+        #                 k * y + 0,
+        #                 0,
+        #                 k * x + 0,
+        #                 k * y + k,
+        #                 0,
+        #                 k * x + k,
+        #                 k * y + k,
+        #                 0,
+        #             ]
+        #         )
 
         for poly, color in self.road_poly:
             colors.extend([color[0], color[1], color[2], 1] * len(poly))
