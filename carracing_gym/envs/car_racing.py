@@ -136,7 +136,7 @@ class CarRacing(gym.Env, EzPickle):
         self.fd_tile = fixtureDef(
             shape=polygonShape(vertices=[(0, 0), (1, 0), (1, -1), (0, -1)])
         )
-
+        self.stack = []
         # self.action_space = spaces.Box(
         #     np.array([-1, 0, 0]).astype(np.float32),
         #     np.array([+1, +1, +1]).astype(np.float32),
@@ -145,7 +145,7 @@ class CarRacing(gym.Env, EzPickle):
 
 
         self.observation_space = spaces.Box(
-            low=0, high=255, shape=(STATE_H, STATE_W, 3), dtype=np.float32
+            low=0, high=255, shape=(1, STATE_H, STATE_W), dtype=np.float32
         )
 
         self.grid_size = 1
@@ -635,7 +635,17 @@ class CarRacing(gym.Env, EzPickle):
         self.world.Step(1.0 / FPS, 6 * 30, 2 * 30)
         self.t += 1.0 / FPS
 
-        self.state = self.render("state_pixels")
+        state_rgb = self.render("state_pixels")
+        state_gray = self.rgb2gray(state_rgb)
+        self.state = state_gray
+
+        if action is None:
+            self.stack = [state_gray] * 1
+        else:
+            self.stack.pop(0)
+            self.stack.append(state_gray)
+
+        assert len(self.stack) == 1
 
         step_reward = 0
         done = False
@@ -660,7 +670,8 @@ class CarRacing(gym.Env, EzPickle):
                 step_reward = -100
                 info["is_success"] = False
 
-        return self.state, step_reward, done, info
+        # return self.state, step_reward, done, info
+        return np.array(self.stack), step_reward, done, info
 
     def render(self, mode="human"):
         assert mode in ["human", "state_pixels", "rgb_array"]
@@ -747,6 +758,15 @@ class CarRacing(gym.Env, EzPickle):
         arr = arr[::-1, :, 0:3]
 
         return arr
+
+    @staticmethod
+    def rgb2gray(rgb, norm=True):
+        # rgb image -> gray [0, 1]
+        gray = np.dot(rgb[..., :], [0.299, 0.587, 0.114])
+        if norm:
+            # normalize
+            gray = gray / 128. - 1.
+        return gray
 
     def close(self):
         if self.viewer is not None:
