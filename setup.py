@@ -5,6 +5,7 @@ setup(name='carracing_gym',
       install_requires=[
             'gym',
             'gym[box2d]',
-            'pyglet'
+            'pyglet',
+            'pyvirtualdisplay'
       ] # And any other dependencies required
 )

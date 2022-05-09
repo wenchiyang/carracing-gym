@@ -57,6 +57,9 @@ VIDEO_H = 400
 WINDOW_W = 1000
 WINDOW_H = 800
 
+from pyvirtualdisplay import Display
+Display(visible=0, size=(WINDOW_W, WINDOW_H)).start()
+
 SCALE = 6.0  # Track scale
 TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
 PLAYFIELD = 2000 / SCALE  # Game over boundary #2000
