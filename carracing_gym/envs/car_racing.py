@@ -120,7 +120,7 @@ class CarRacing(gym.Env, EzPickle):
         "video.frames_per_second": FPS,
     }
 
-    def __init__(self, verbose=1, render=False, num_maps=None, seed=None):
+    def __init__(self, verbose=1, render=False, num_maps=None, seed=None, num_stacked_img=1):
         EzPickle.__init__(self)
         self.seed(seed)
         self.contactListener_keepref = FrictionDetector(self)
@@ -137,6 +137,7 @@ class CarRacing(gym.Env, EzPickle):
             shape=polygonShape(vertices=[(0, 0), (1, 0), (1, -1), (0, -1)])
         )
         self.stack = []
+        self.num_stacked_img = num_stacked_img
         # self.action_space = spaces.Box(
         #     np.array([-1, 0, 0]).astype(np.float32),
         #     np.array([+1, +1, +1]).astype(np.float32),
@@ -145,7 +146,7 @@ class CarRacing(gym.Env, EzPickle):
 
 
         self.observation_space = spaces.Box(
-            low=0, high=255, shape=(1, STATE_H, STATE_W), dtype=np.float32
+            low=0, high=255, shape=(self.num_stacked_img, STATE_H, STATE_W), dtype=np.float32
         )
 
         self.grid_size = 1
@@ -640,12 +641,12 @@ class CarRacing(gym.Env, EzPickle):
         self.state = state_gray
 
         if action is None:
-            self.stack = [state_gray] * 1
+            self.stack = [state_gray] * self.num_stacked_img
         else:
             self.stack.pop(0)
             self.stack.append(state_gray)
 
-        assert len(self.stack) == 1
+        assert len(self.stack) == self.num_stacked_img
 
         step_reward = 0
         done = False
