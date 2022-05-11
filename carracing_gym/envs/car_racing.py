@@ -81,6 +81,11 @@ BORDER_MIN_COUNT = 4
 
 ROAD_COLOR = [0.4, 0.4, 0.4]
 
+MY_BAR_COLOR = -1.0
+MY_GRASS_COLOR = 0.26464
+MY_ROAD_COLOR = -0.20313
+MY_CAR_COLOR = -0.52347
+
 
 class FrictionDetector(contactListener):
     def __init__(self, env):
@@ -768,6 +773,7 @@ class CarRacing(gym.Env, EzPickle):
 
         return arr
 
+
     @staticmethod
     def rgb2gray(rgb, norm=True):
         # rgb image -> gray [0, 1]
@@ -775,7 +781,15 @@ class CarRacing(gym.Env, EzPickle):
         if norm:
             # normalize
             gray = gray / 128. - 1.
-        return gray
+
+            gray[np.isclose(gray, MY_BAR_COLOR, rtol=1e-03, atol=1e-03)] = 1
+            gray[np.isclose(gray, MY_GRASS_COLOR, rtol=1e-03, atol=1e-03)] = 0.6
+            gray[np.isclose(gray, MY_ROAD_COLOR, rtol=1e-03, atol=1e-03)] = -0.1
+            gray[np.isclose(gray, MY_CAR_COLOR, rtol=1e-03, atol=1e-03)] = -1
+            # temp = th.tensor(gray).unsqueeze(0)
+            # plt.imshow(temp[0], cmap=plt.get_cmap('gray'), vmin=-1, vmax=1)
+            # plt.show()
+            return gray
 
     def close(self):
         if self.viewer is not None:
