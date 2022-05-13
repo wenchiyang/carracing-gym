@@ -186,6 +186,7 @@ class CarRacing(gym.Env, EzPickle):
         self.reward = 0.0
         self.prev_reward = 0.0
         self.tile_visited_count = 0
+        self.tile_visited_count_previous = 0
         self.t = 0.0
         self.road_poly = []
 
@@ -249,7 +250,7 @@ class CarRacing(gym.Env, EzPickle):
         for c in range(CHECKPOINTS):
             noise = self.np_random.uniform(0, 2 * math.pi * 1 / CHECKPOINTS)
             alpha = 2 * math.pi * c / CHECKPOINTS + noise
-            rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD*2)
+            rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD * 1.5)
             # rad = self.np_random.uniform(TRACK_RAD / (3*2), TRACK_RAD*2)
 
             if c == 0:
@@ -677,13 +678,23 @@ class CarRacing(gym.Env, EzPickle):
 
         assert len(self.stack) == self.num_stacked_img
 
+        # visit_new_reward = bool(self.tile_visited_count - self.tile_visited_count_previous)
+        # if visit_new_reward:
+        #     print("dddd")
+
         step_reward = 0
         done = False
         info = {
-            "is_success": False
+            "is_success": False,
+            # "new_reward": visit_new_reward
         }
         if action is not None:  # First step without action, called from reset()
             self.reward -= 0.1
+            visit_new_reward = bool(self.tile_visited_count - self.tile_visited_count_previous)
+            self.tile_visited_count_previous = self.tile_visited_count
+            if visit_new_reward:
+                self.reward += 50
+                # print("dddd")
             # We actually don't want to count fuel spent, we want car to be faster.
             # self.reward -=  10 * self.car.fuel_spent / ENGINE_POWER
             self.car.fuel_spent = 0.0
@@ -731,7 +742,7 @@ class CarRacing(gym.Env, EzPickle):
         # Animate zoom first second:
         # zoom = 0.1 * SCALE * max(1 - self.t, 0) + ZOOM * SCALE * min(self.t, 1)
         zoom = ZOOM * SCALE # TODO
-        # zoom = 8
+        # zoom = 0.7
         scroll_x = self.car.hull.position[0]
         scroll_y = self.car.hull.position[1]
         angle = -self.car.hull.angle
