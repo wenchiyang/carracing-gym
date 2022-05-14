@@ -71,7 +71,7 @@ PLAYFIELD = 2000 / SCALE  # Game over boundary #2000
 FPS = 50  # Frames per second
 ZOOM = 2.7  # Camera zoom #2.7
 ZOOM_FOLLOW = True  # Set to False for fixed view (don't use zoom)
-
+# ZOOM_FOLLOW = False
 
 TRACK_DETAIL_STEP = 21 / SCALE
 TRACK_TURN_RATE = 0.31
@@ -134,7 +134,8 @@ class CarRacing(gym.Env, EzPickle):
         "video.frames_per_second": FPS,
     }
 
-    def __init__(self, verbose=1, render=False, num_maps=None, seed=None, num_stacked_img=1):
+    def __init__(self, verbose=1, render=False, num_maps=None, seed=None,
+                 num_stacked_img=1, spikyness=[1/3, 1], n_checkpoints=12, n_corners=12):
         EzPickle.__init__(self)
         self.seed(seed)
         self.contactListener_keepref = FrictionDetector(self)
@@ -169,6 +170,9 @@ class CarRacing(gym.Env, EzPickle):
         self.color_channels = 3
         self.action_size = 5
         self.action_space = Discrete(self.action_size)
+        self.spikyness = spikyness
+        self.n_checkpoints = n_checkpoints
+        self.n_corners = n_corners
 
         self.render_or_not = render
         self.num_maps = num_maps
@@ -243,15 +247,15 @@ class CarRacing(gym.Env, EzPickle):
 
     def _create_track_my(self):
         # CHECKPOINTS = 12
-        CHECKPOINTS = 24
+        CHECKPOINTS = self.n_corners
 
         # Create checkpoints
         checkpoints = []
         for c in range(CHECKPOINTS):
             noise = self.np_random.uniform(0, 2 * math.pi * 1 / CHECKPOINTS)
             alpha = 2 * math.pi * c / CHECKPOINTS + noise
-            rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD * 1.5)
-            # rad = self.np_random.uniform(TRACK_RAD / (3*2), TRACK_RAD*2)
+            # rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD)
+            rad = self.np_random.uniform(TRACK_RAD * self.spikyness[0], TRACK_RAD * self.spikyness[1])
 
             if c == 0:
                 alpha = 0
@@ -704,7 +708,7 @@ class CarRacing(gym.Env, EzPickle):
             car_x, car_y = self.car.hull.position.x, self.car.hull.position.y
             ####
             # success!
-            if self.tile_visited_count == 24 : # TODO: should use CHECKPOINTS
+            if self.tile_visited_count == self.n_checkpoints :
                 done = True
                 info["is_success"] = True
             x, y = self.car.hull.position
