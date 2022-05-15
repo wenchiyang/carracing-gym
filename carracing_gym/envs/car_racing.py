@@ -135,7 +135,7 @@ class CarRacing(gym.Env, EzPickle):
     }
 
     def __init__(self, verbose=1, render=False, num_maps=None, seed=None,
-                 num_stacked_img=1, spikyness=[1/3, 1], n_checkpoints=12, n_corners=12):
+                 num_stacked_img=1, spikyness=[1/3, 1], n_rewardpoints=12, n_corners=12):
         EzPickle.__init__(self)
         self.seed(seed)
         self.contactListener_keepref = FrictionDetector(self)
@@ -171,7 +171,7 @@ class CarRacing(gym.Env, EzPickle):
         self.action_size = 5
         self.action_space = Discrete(self.action_size)
         self.spikyness = spikyness
-        self.n_checkpoints = n_checkpoints
+        self.n_rewardpoints = n_rewardpoints
         self.n_corners = n_corners
 
         self.render_or_not = render
@@ -439,7 +439,7 @@ class CarRacing(gym.Env, EzPickle):
             #         ([b1_l, b1_r, b2_r, b2_l], (1, 1, 1) if i % 2 == 0 else (1, 0, 0))
             #     )
         self.track = track
-        road_poly_reward = sample(self.road_poly, CHECKPOINTS)
+        road_poly_reward = sample(self.road_poly, min(len(self.road_poly), self.n_rewardpoints))
         self.road_poly_reward = [vs for vs,_ in road_poly_reward]
         return True, (self.road_poly, self.track, self.road_poly_reward)
 
@@ -696,9 +696,8 @@ class CarRacing(gym.Env, EzPickle):
             self.reward -= 0.1
             visit_new_reward = bool(self.tile_visited_count - self.tile_visited_count_previous)
             self.tile_visited_count_previous = self.tile_visited_count
-            if visit_new_reward:
-                self.reward += 50
-                # print("dddd")
+            # if visit_new_reward:
+            #     self.reward += 50
             # We actually don't want to count fuel spent, we want car to be faster.
             # self.reward -=  10 * self.car.fuel_spent / ENGINE_POWER
             self.car.fuel_spent = 0.0
@@ -708,7 +707,7 @@ class CarRacing(gym.Env, EzPickle):
             car_x, car_y = self.car.hull.position.x, self.car.hull.position.y
             ####
             # success!
-            if self.tile_visited_count == self.n_checkpoints :
+            if self.tile_visited_count == self.n_rewardpoints :
                 done = True
                 info["is_success"] = True
             x, y = self.car.hull.position
