@@ -49,9 +49,10 @@ import pyglet
 from random import randrange, sample
 pyglet.options["debug_gl"] = False
 from pyglet import gl
+from skimage.measure import block_reduce
 
-STATE_W = 96  # less than Atari 160x192
-STATE_H = 96
+STATE_W = 48  # less than Atari 160x192
+STATE_H = 48
 VIDEO_W = 600
 VIDEO_H = 400
 WINDOW_W = 1000
@@ -70,7 +71,7 @@ TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
 PLAYFIELD = 2000 / SCALE  # Game over boundary #2000
 FPS = 50  # Frames per second
 ZOOM = 2.7  # Camera zoom #2.7
-ZOOM_FOLLOW = True  # Set to False for fixed view (don't use zoom)
+ZOOM_FOLLOW = False  # Set to False for fixed view (don't use zoom)
 # ZOOM_FOLLOW = False
 
 TRACK_DETAIL_STEP = 21 / SCALE
@@ -135,7 +136,8 @@ class CarRacing(gym.Env, EzPickle):
     }
 
     def __init__(self, verbose=1, render=False, num_maps=None, seed=None,
-                 num_stacked_img=1, spikyness=[1/3, 1], n_rewardpoints=12, n_corners=12):
+                 num_stacked_img=1, spikyness=[1/3, 1], n_rewardpoints=12, n_corners=12, downsampling_size=8,
+                 height=None, width=None, render_mode=None):
         EzPickle.__init__(self)
         self.seed(seed)
         self.contactListener_keepref = FrictionDetector(self)
@@ -153,16 +155,30 @@ class CarRacing(gym.Env, EzPickle):
         )
         self.stack = []
         self.num_stacked_img = num_stacked_img
+        self.downsampling_size = downsampling_size
+        self.height = height
+        self.render_mode = render_mode
         # self.action_space = spaces.Box(
         #     np.array([-1, 0, 0]).astype(np.float32),
         #     np.array([+1, +1, +1]).astype(np.float32),
         # )  # steer, gas, brake
 
 
+        if self.render_mode == "gray":
+            reduced_dim = math.ceil(self.height / self.downsampling_size)
+            self.observation_space = spaces.Box(
+                low=-1,
+                high=1,
+                shape=(
+                    self.num_stacked_img, reduced_dim, reduced_dim
+                ),
+                dtype=np.float32
+            )
+        else:
+            self.observation_space = spaces.Box(
+                low=0, high=255, shape=(self.num_stacked_img, STATE_H, STATE_W), dtype=np.float32
+            )
 
-        self.observation_space = spaces.Box(
-            low=0, high=255, shape=(self.num_stacked_img, STATE_H, STATE_W), dtype=np.float32
-        )
 
         self.grid_size = 1
         self.grid_height = 1
@@ -670,8 +686,9 @@ class CarRacing(gym.Env, EzPickle):
 
 
 
-        state_rgb = self.render("state_pixels")
-        state_gray = self.rgb2gray(state_rgb)
+        # state_rgb = self.render("state_pixels")
+        # state_gray = self.rgb2gray(state_rgb)
+        state_gray = self.render("gray")
         self.state = state_gray
 
         if action is None:
@@ -721,7 +738,7 @@ class CarRacing(gym.Env, EzPickle):
         return np.array(self.stack), step_reward, done, info
 
     def render(self, mode="human"):
-        assert mode in ["human", "state_pixels", "rgb_array"]
+        assert mode in ["human", "state_pixels", "rgb_array", "gray"]
         if not self.render_or_not and mode=="human":
             return
         if self.viewer is None:
@@ -745,10 +762,11 @@ class CarRacing(gym.Env, EzPickle):
         # Animate zoom first second:
         # zoom = 0.1 * SCALE * max(1 - self.t, 0) + ZOOM * SCALE * min(self.t, 1)
         zoom = ZOOM * SCALE # TODO
-        # zoom = 0.7
+        # zoom = 1.0
         scroll_x = self.car.hull.position[0]
         scroll_y = self.car.hull.position[1]
         angle = -self.car.hull.angle
+        # angle = 0
         vel = self.car.hull.linearVelocity
         if np.linalg.norm(vel) > 0.5:
             angle = math.atan2(vel[0], vel[1])
@@ -761,7 +779,7 @@ class CarRacing(gym.Env, EzPickle):
         )
         self.transform.set_rotation(angle)
 
-        self.car.draw(self.viewer, mode != "state_pixels")
+        self.car.draw(self.viewer)
 
         arr = None
         win = self.viewer.window
@@ -773,7 +791,7 @@ class CarRacing(gym.Env, EzPickle):
         if mode == "rgb_array":
             VP_W = VIDEO_W
             VP_H = VIDEO_H
-        elif mode == "state_pixels":
+        elif mode == "state_pixels" or mode == "gray":
             VP_W = STATE_W
             VP_H = STATE_H
         else:
@@ -805,8 +823,21 @@ class CarRacing(gym.Env, EzPickle):
         arr = arr.reshape(VP_H, VP_W, 4)
         arr = arr[::-1, :, 0:3]
 
+        if mode == "gray":
+            arr = self.rgb2gray(arr)
+            arr = self.downsampling(arr)
+
+
+
         return arr
 
+    def downsampling(self, x):
+        dz = block_reduce(x, block_size=(self.downsampling_size, self.downsampling_size), func=np.mean)
+        # import matplotlib.pyplot as plt
+        # dz = th.tensor(dz)
+        # plt.imshow(dz, cmap="gray", vmin=-1, vmax=1)
+        # plt.show()
+        return dz
 
     @staticmethod
     def rgb2gray(rgb, norm=True):
@@ -880,66 +911,66 @@ class CarRacing(gym.Env, EzPickle):
         vl.delete()
 
     def render_indicators(self, W, H):
-        s = W / 40.0
-        h = H / 40.0
-        colors = [0, 0, 0, 1] * 4
-        polygons = [W, 0, 0, W, 5 * h, 0, 0, 5 * h, 0, 0, 0, 0]
-
-        def vertical_ind(place, val, color):
-            colors.extend([color[0], color[1], color[2], 1] * 4)
-            polygons.extend(
-                [
-                    place * s,
-                    h + h * val,
-                    0,
-                    (place + 1) * s,
-                    h + h * val,
-                    0,
-                    (place + 1) * s,
-                    h,
-                    0,
-                    (place + 0) * s,
-                    h,
-                    0,
-                ]
-            )
-
-        def horiz_ind(place, val, color):
-            colors.extend([color[0], color[1], color[2], 1] * 4)
-            polygons.extend(
-                [
-                    (place + 0) * s,
-                    4 * h,
-                    0,
-                    (place + val) * s,
-                    4 * h,
-                    0,
-                    (place + val) * s,
-                    2 * h,
-                    0,
-                    (place + 0) * s,
-                    2 * h,
-                    0,
-                ]
-            )
-
-        true_speed = np.sqrt(
-            np.square(self.car.hull.linearVelocity[0])
-            + np.square(self.car.hull.linearVelocity[1])
-        )
-
-        vertical_ind(5, 0.02 * true_speed, (1, 1, 1))
-        vertical_ind(7, 0.01 * self.car.wheels[0].omega, (0.0, 0, 1))  # ABS sensors
-        vertical_ind(8, 0.01 * self.car.wheels[1].omega, (0.0, 0, 1))
-        vertical_ind(9, 0.01 * self.car.wheels[2].omega, (0.2, 0, 1))
-        vertical_ind(10, 0.01 * self.car.wheels[3].omega, (0.2, 0, 1))
-        horiz_ind(20, -10.0 * self.car.wheels[0].joint.angle, (0, 1, 0))
-        horiz_ind(30, -0.8 * self.car.hull.angularVelocity, (1, 0, 0))
-        vl = pyglet.graphics.vertex_list(
-            len(polygons) // 3, ("v3f", polygons), ("c4f", colors)
-        )  # gl.GL_QUADS,
-        vl.draw(gl.GL_QUADS)
-        vl.delete()
+        # s = W / 40.0
+        # h = H / 40.0
+        # colors = [0, 0, 0, 1] * 4
+        # polygons = [W, 0, 0, W, 5 * h, 0, 0, 5 * h, 0, 0, 0, 0]
+        #
+        # def vertical_ind(place, val, color):
+        #     colors.extend([color[0], color[1], color[2], 1] * 4)
+        #     polygons.extend(
+        #         [
+        #             place * s,
+        #             h + h * val,
+        #             0,
+        #             (place + 1) * s,
+        #             h + h * val,
+        #             0,
+        #             (place + 1) * s,
+        #             h,
+        #             0,
+        #             (place + 0) * s,
+        #             h,
+        #             0,
+        #         ]
+        #     )
+        #
+        # def horiz_ind(place, val, color):
+        #     colors.extend([color[0], color[1], color[2], 1] * 4)
+        #     polygons.extend(
+        #         [
+        #             (place + 0) * s,
+        #             4 * h,
+        #             0,
+        #             (place + val) * s,
+        #             4 * h,
+        #             0,
+        #             (place + val) * s,
+        #             2 * h,
+        #             0,
+        #             (place + 0) * s,
+        #             2 * h,
+        #             0,
+        #         ]
+        #     )
+        #
+        # true_speed = np.sqrt(
+        #     np.square(self.car.hull.linearVelocity[0])
+        #     + np.square(self.car.hull.linearVelocity[1])
+        # )
+        #
+        # vertical_ind(5, 0.02 * true_speed, (1, 1, 1))
+        # vertical_ind(7, 0.01 * self.car.wheels[0].omega, (0.0, 0, 1))  # ABS sensors
+        # vertical_ind(8, 0.01 * self.car.wheels[1].omega, (0.0, 0, 1))
+        # vertical_ind(9, 0.01 * self.car.wheels[2].omega, (0.2, 0, 1))
+        # vertical_ind(10, 0.01 * self.car.wheels[3].omega, (0.2, 0, 1))
+        # horiz_ind(20, -10.0 * self.car.wheels[0].joint.angle, (0, 1, 0))
+        # horiz_ind(30, -0.8 * self.car.hull.angularVelocity, (1, 0, 0))
+        # vl = pyglet.graphics.vertex_list(
+        #     len(polygons) // 3, ("v3f", polygons), ("c4f", colors)
+        # )  # gl.GL_QUADS,
+        # vl.draw(gl.GL_QUADS)
+        # vl.delete()
         self.score_label.text = "%04i" % self.reward
         self.score_label.draw()
     def get_action_lookup(self):
