@@ -30,6 +30,7 @@ and turn at the same time.
 
 Created by Oleg Klimov. Licensed on the same terms as the rest of OpenAI Gym.
 """
+import random
 import sys
 import math
 import numpy as np
@@ -139,7 +140,8 @@ class CarRacing(gym.Env, EzPickle):
                  num_stacked_img=1, spikyness=[1/3, 1], n_rewardpoints=12, n_corners=12, downsampling_size=8,
                  height=None, width=None, render_mode=None):
         EzPickle.__init__(self)
-        self.seed(seed)
+        if seed is not None:
+            self.seed(seed)
         self.contactListener_keepref = FrictionDetector(self)
         self.world = Box2D.b2World((0, 0), contactListener=self.contactListener_keepref)
         self.viewer = None
@@ -197,6 +199,7 @@ class CarRacing(gym.Env, EzPickle):
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
+        random.seed(seed)
         return [seed]
 
     def select_map(self):
