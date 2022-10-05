@@ -782,7 +782,7 @@ class CarRacing(gym.Env, EzPickle):
         )
         self.transform.set_rotation(angle)
 
-        self.car.draw(self.viewer)
+        self.car.draw(self.viewer, draw_particles=False)
 
         arr = None
         win = self.viewer.window
