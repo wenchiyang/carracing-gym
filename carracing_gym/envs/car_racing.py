@@ -257,6 +257,7 @@ class CarRacing(gym.Env, EzPickle):
                     self.road_poly_storage.append(maps_info[0])
                     self.track_storage.append(maps_info[1])
                     self.road_poly_reward_storage.append(maps_info[2])
+                    self.n_total_tiles = min( len(self.road_poly), self.n_rewardpoints )
                     break
                 if self.verbose == 1:
                     print(
@@ -727,7 +728,7 @@ class CarRacing(gym.Env, EzPickle):
             car_x, car_y = self.car.hull.position.x, self.car.hull.position.y
             ####
             # success!
-            if self.tile_visited_count == self.n_rewardpoints :
+            if self.tile_visited_count == self.n_total_tiles :
                 done = True
                 info["is_success"] = True
             x, y = self.car.hull.position
