@@ -732,11 +732,13 @@ class CarRacing(gym.Env, EzPickle):
                 done = True
                 info["is_success"] = True
             x, y = self.car.hull.position
-            # 
+            #
+            info["out_of_field"] = False
             if abs(x) > PLAYFIELD or abs(y) > PLAYFIELD:
                 done = True
                 step_reward = -100
                 info["is_success"] = False
+                info["out_of_field"] = True
 
         # return self.state, step_reward, done, info
         return np.array(self.stack), step_reward, done, info
