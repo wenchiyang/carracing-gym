@@ -68,8 +68,8 @@ elif os_type == "Linux":
     Display(visible=0, size=(WINDOW_W, WINDOW_H)).start()
 
 SCALE = 6.0  # Track scale
-TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
-PLAYFIELD = 2000 / SCALE  # Game over boundary #2000
+TRACK_RAD = 500 / SCALE  # Track is heavily morphed circle with this radius
+PLAYFIELD = 1200 / SCALE  # Game over boundary #2000
 FPS = 50  # Frames per second
 ZOOM = 2.7  # Camera zoom #2.7
 ZOOM_FOLLOW = False  # Set to False for fixed view (don't use zoom)
