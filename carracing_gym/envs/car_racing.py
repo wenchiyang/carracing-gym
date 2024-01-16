@@ -484,7 +484,7 @@ class CarRacing(GymCarRacing):
 
         win.clear()
         t = self.transform
-        if mode == "gray":
+        if mode == "gray" or mode == "state_pixels":
             VP_W = STATE_W
             VP_H = STATE_H
         else:

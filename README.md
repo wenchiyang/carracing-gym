@@ -2,12 +2,12 @@
 
 
 
-| property          | value                                              |
-|-------------------|----------------------------------------------------|
-| Action Space      | `Discrete(5, int)`                                 |
-| Observation Shape | `Box(4, 48, 48)`                                   |
-| Observation Range | (-1, 1) for grayscale <br/>(0, 255) for state_pixel|
-| Import            | `gym.make("CarRacingPLS-v1")`                      |
+| property          | value                                               |
+|-------------------|-----------------------------------------------------|
+| Action Space      | `Discrete(5, int)`                                  |
+| Observation Shape | `Box(4, 48, 48)` for                                |
+| Observation Range | (-1, 1) for `gray` <br/>(0, 255) for `state_pixels` |
+| Import            | `gym.make("CarRacingPLS-v1")`                       |
 
 
 Inherits the
@@ -16,8 +16,8 @@ Inherits the
 and a simpler observation space.
 
 State consists of four consecutive images of STATE_W x STATE_H pixels. If the
-render mode is "state_pixels", the states are in colors. If the render mode is
-"gray", the states are in grayscale.
+render mode is `state_pixels`, the states are in colors. If the render mode is
+`gray`, the states are in grayscale.
 
 The reward is -0.1 every frame and +1000/N for every track tile visited, where
 N is the total number of tiles visited in the track. For example, if you have
@@ -42,6 +42,6 @@ pip install -e .
 Parameters for the environment.
   - `seed`: the seed of the environment. 
   - `verbose`: if the value is one, print debug information.
-  - `render_mode`: determines the state space. If the value is "state_pixels" then the states are in colors.
-If the value is "gray", then the states are in grayscale.
+  - `render_mode`: determines the state space. If the value is `state_pixels` then the states are in colors.
+If the value is `gray`, then the states are in grayscale.
 
