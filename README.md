@@ -28,16 +28,9 @@ pip install -e .
 ```
 
 ## Configure the environment
-Parameters for the learning algorithm (`ppo`). Most parameters are passed to [stablebaselines3](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html#).
+Parameters for the environment.
   - `seed`: the seed of the environment. 
   - `verbose`: if the value is one, print debug information.
   - `render_mode`: determines the state space. If the value is "state_pixels" then the states are in colors.
 If the value is "gray", then the states are in grayscale.
 
-ACTION_LOOKUP = {
-    0: "do nothing",
-    1: "accelerate",
-    2: "brake",
-    3: "turn left",
-    4: "turn right",
-}
