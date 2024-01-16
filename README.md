@@ -1,5 +1,15 @@
 ## A simpler CarRacing env
 
+
+
+| property          | value                                              |
+|-------------------|----------------------------------------------------|
+| Action Space      | `Discrete(5, int)`                                 |
+| Observation Shape | `Box(4, 48, 48)`                                   |
+| Observation Range | (-1, 1) for grayscale <br/>(0, 255) for state_pixel|
+| Import            | `gym.make("CarRacingPLS-v1")`                      |
+
+
 Inherits the
 [CarRacing environment](https://www.gymlibrary.dev/environments/box2d/car_racing/) 
 (gym.envs.box2d.car_racing) but with discrete control instead of continuous one
@@ -19,6 +29,7 @@ all episodes are the same, generated at initialization.
 The episode finishes when all the tiles are visited. The car also can go
 outside of the PLAYFIELD -  that is far off the track, then it will get -100
 and die.
+
 
 
 ## Installation

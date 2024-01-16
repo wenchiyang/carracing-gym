@@ -26,7 +26,9 @@ from gym import spaces
 from gym.spaces.discrete import Discrete
 
 import pyglet
+import random
 from random import sample
+from gym.utils import seeding
 
 pyglet.options["debug_gl"] = False
 from pyglet import gl
@@ -100,11 +102,13 @@ class CarRacing(GymCarRacing):
     }
 
     def __init__(self, verbose=1, seed=None, render_mode=True):
+        super(CarRacing, self).__init__()
+        self.verbose = verbose
         if seed is not None:
             self.seed(seed)
         # Fix the render mode for the step(), reset(), etc
         self.render_mode = render_mode
-        super(CarRacing, self).__init__()
+
 
         # observation space
         self.stack = []  # the state
@@ -141,6 +145,11 @@ class CarRacing(GymCarRacing):
         self.n_corners = 12
         # create the map once and reuse the same map later
         self._create_map()
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        random.seed(seed)
+        return [seed]
 
     def _create_map(self):
         self.road_poly_storage = []
